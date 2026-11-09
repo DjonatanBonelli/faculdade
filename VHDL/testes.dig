@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<circuit>
+  <version>2</version>
+  <attributes/>
+  <visualElements>
+    <visualElement>
+      <elementName>External</elementName>
+      <elementAttributes>
+        <entry>
+          <string>Label</string>
+          <string>elevador</string>
+        </entry>
+        <entry>
+          <string>applicationType</string>
+          <appType>GHDL</appType>
+        </entry>
+        <entry>
+          <string>externalInputs</string>
+          <string>Clock,Reset,Escolha_andar:4</string>
+        </entry>
+        <entry>
+          <string>Code</string>
+          <string>library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+ENTITY elevador IS
+    PORT (Clock, Reset : IN STD_LOGIC;
+    Escolha_andar : IN STD_LOGIC_VECTOR(3 downto 0);
+    Sensor_andar: OUT STD_LOGIC_VECTOR(3 downto 0);
+    alo: out std_logic);
+END elevador;
+
+ARCHITECTURE Behavior OF elevador IS
+    TYPE estado_elevador IS (parado);
+    SIGNAL estado_atual, proximo_estado : estado_elevador;
+	signal s_sensor_andar: std_logic_vector(3 downto 0);
+    
+BEGIN
+    PROCESS (Reset, Clock)
+begin
+        if Reset = &apos;1&apos; then
+            Estado_atual &lt;= parado;     --parado
+        END IF;
+
+        if clock&apos;event and clock = &apos;1&apos; then
+	    estado_atual &lt;= proximo_estado;    
+	    
+        END IF;
+    END PROCESS;
+
+    PROCESS (Estado_atual, Proximo_estado, escolha_andar)
+	--variable s_sensor_andar : std_logic_vector(3 downto 0);
+	variable int_sensor : integer;
+begin
+
+	int_sensor := to_integer(unsigned(escolha_andar));
+
+    case Estado_atual is
+	
+        when Parado =&gt;   
+	    
+	sensor_andar &lt;= escolha_andar;
+	    if int_sensor = 1 then
+		s_sensor_andar &lt;= &quot;0001&quot;;	
+		alo &lt;= &apos;1&apos;;		
+
+	    elsif escolha_andar = &quot;0010&quot; then
+		s_sensor_andar &lt;= &quot;0010&quot;;
+		alo &lt;= &apos;1&apos;;
+	    
+	END IF;
+
+        END CASE;
+
+        END PROCESS;
+        
+END Behavior;</string>
+        </entry>
+        <entry>
+          <string>externalOutputs</string>
+          <string>Sensor_andar:4,alo</string>
+        </entry>
+        <entry>
+          <string>Width</string>
+          <int>15</int>
+        </entry>
+      </elementAttributes>
+      <pos x="620" y="300"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Out</elementName>
+      <elementAttributes>
+        <entry>
+          <string>Bits</string>
+          <int>4</int>
+        </entry>
+      </elementAttributes>
+      <pos x="960" y="300"/>
+    </visualElement>
+    <visualElement>
+      <elementName>In</elementName>
+      <elementAttributes/>
+      <pos x="540" y="300"/>
+    </visualElement>
+    <visualElement>
+      <elementName>In</elementName>
+      <elementAttributes/>
+      <pos x="540" y="340"/>
+    </visualElement>
+    <visualElement>
+      <elementName>In</elementName>
+      <elementAttributes>
+        <entry>
+          <string>Bits</string>
+          <int>4</int>
+        </entry>
+      </elementAttributes>
+      <pos x="540" y="380"/>
+    </visualElement>
+    <visualElement>
+      <elementName>LED</elementName>
+      <elementAttributes/>
+      <pos x="960" y="340"/>
+    </visualElement>
+  </visualElements>
+  <wires>
+    <wire>
+      <p1 x="600" y="320"/>
+      <p2 x="620" y="320"/>
+    </wire>
+    <wire>
+      <p1 x="540" y="340"/>
+      <p2 x="600" y="340"/>
+    </wire>
+    <wire>
+      <p1 x="920" y="340"/>
+      <p2 x="960" y="340"/>
+    </wire>
+    <wire>
+      <p1 x="540" y="380"/>
+      <p2 x="620" y="380"/>
+    </wire>
+    <wire>
+      <p1 x="540" y="300"/>
+      <p2 x="620" y="300"/>
+    </wire>
+    <wire>
+      <p1 x="920" y="300"/>
+      <p2 x="960" y="300"/>
+    </wire>
+    <wire>
+      <p1 x="600" y="320"/>
+      <p2 x="600" y="340"/>
+    </wire>
+    <wire>
+      <p1 x="920" y="320"/>
+      <p2 x="920" y="340"/>
+    </wire>
+    <wire>
+      <p1 x="620" y="340"/>
+      <p2 x="620" y="380"/>
+    </wire>
+  </wires>
+  <measurementOrdering/>
+</circuit>

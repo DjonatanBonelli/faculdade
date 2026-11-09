@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="utf-8"?>
+<circuit>
+  <version>2</version>
+  <attributes/>
+  <visualElements>
+    <visualElement>
+      <elementName>External</elementName>
+      <elementAttributes>
+        <entry>
+          <string>applicationType</string>
+          <appType>GHDL</appType>
+        </entry>
+        <entry>
+          <string>Label</string>
+          <string>elevador</string>
+        </entry>
+        <entry>
+          <string>externalInputs</string>
+          <string>Clock,Reset,Escolha_andar:4</string>
+        </entry>
+        <entry>
+          <string>Code</string>
+          <string>library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+--3 clocks para iniciar
+--cada bit é um andar (0001 = primeiro andar; 1000 = quarto andar)...
+
+ENTITY elevador IS
+    PORT (Clock, Reset : IN STD_LOGIC;
+    Escolha_andar : IN STD_LOGIC_VECTOR(3 downto 0);
+    Subir, Descer, parar : OUT STD_LOGIC; 
+    Sensor_andar: OUT STD_LOGIC_VECTOR(3 downto 0));
+END elevador;
+
+ARCHITECTURE Behavior OF elevador IS
+    TYPE estado_elevador IS (subindo, descendo, parado);
+    SIGNAL estado_atual, proximo_estado : estado_elevador;
+BEGIN
+    PROCESS (Reset, Clock)
+	variable s_sensor_andar: std_logic_vector(3 downto 0);
+begin
+        if Reset = &apos;1&apos; then
+            s_sensor_andar := &quot;0000&quot;;      --terreo
+	    estado_atual &lt;= parado;
+        END IF;
+	
+	Estado_atual &lt;= parado;
+
+        if rising_edge(clock) then
+	        estado_atual &lt;= proximo_estado;
+	
+        END IF;
+    END PROCESS;
+
+    PROCESS (Estado_atual, Proximo_estado, escolha_andar)
+        variable int_sensor : integer;
+        variable int_escolha: integer;   
+        variable s_sensor_andar : std_logic_vector(3 downto 0);
+begin
+    int_sensor := to_integer((unsigned(s_sensor_andar)));
+    int_escolha := to_integer((unsigned(escolha_andar)));
+
+    case Estado_atual is
+	
+        when Parado =&gt;   
+            if int_sensor = int_escolha then --se estiver no andar certo: parado
+                Proximo_estado &lt;= parado;
+            else
+                if int_sensor &gt; 8 then      --passou o limite
+                    Proximo_estado &lt;= parado;
+                elsif int_sensor &lt; int_escolha then    --se estiver no andar inferior a escolha: subindo
+                    Proximo_estado &lt;= subindo;
+                elsif int_sensor &gt; int_escolha then       --se estiver no andar superior a escolha: descendo
+                    Proximo_estado &lt;= descendo;  
+		else
+		    Proximo_estado &lt;= parado; 
+                END IF;
+            END IF;
+
+        when Subindo =&gt;
+
+        --tratamentos gerais
+            if s_sensor_andar = &quot;0000&quot; then
+                s_sensor_andar := &quot;0001&quot;;
+            elsif int_escolha &gt; 8 then
+                proximo_estado &lt;= parado;
+   	    else
+		s_sensor_andar := std_logic_vector(shift_left(unsigned(s_sensor_andar), 1));-- desloca bits a esquerda
+            END IF;
+
+        when Descendo =&gt;
+	
+	    if to_integer(unsigned(s_sensor_andar)) &gt; 8 then
+		s_sensor_andar := &quot;1000&quot;;
+	    else
+		s_sensor_andar := std_logic_vector(shift_right(unsigned(s_sensor_andar), 1));-- desloca bits a direita	           
+		END IF;
+
+        END CASE;
+        -- atribui saidas
+	    sensor_andar &lt;= s_sensor_andar; 
+            Subir &lt;= &apos;1&apos; when estado_atual = subindo else &apos;0&apos;;
+            Descer &lt;=  &apos;1&apos; when estado_atual = descendo else &apos;0&apos;;
+	    Parar &lt;=  &apos;1&apos; when estado_atual = parado else &apos;0&apos;;
+	END PROCESS;
+        
+END Behavior;</string>
+        </entry>
+        <entry>
+          <string>externalOutputs</string>
+          <string>Subir,Descer,parar,Sensor_andar:4</string>
+        </entry>
+        <entry>
+          <string>Width</string>
+          <int>15</int>
+        </entry>
+      </elementAttributes>
+      <pos x="480" y="260"/>
+    </visualElement>
+    <visualElement>
+      <elementName>LED</elementName>
+      <elementAttributes/>
+      <pos x="900" y="260"/>
+    </visualElement>
+    <visualElement>
+      <elementName>LED</elementName>
+      <elementAttributes/>
+      <pos x="900" y="300"/>
+    </visualElement>
+    <visualElement>
+      <elementName>In</elementName>
+      <elementAttributes/>
+      <pos x="340" y="260"/>
+    </visualElement>
+    <visualElement>
+      <elementName>In</elementName>
+      <elementAttributes/>
+      <pos x="340" y="300"/>
+    </visualElement>
+    <visualElement>
+      <elementName>In</elementName>
+      <elementAttributes>
+        <entry>
+          <string>Bits</string>
+          <int>4</int>
+        </entry>
+      </elementAttributes>
+      <pos x="340" y="340"/>
+    </visualElement>
+    <visualElement>
+      <elementName>Out</elementName>
+      <elementAttributes>
+        <entry>
+          <string>rotation</string>
+          <rotation rotation="3"/>
+        </entry>
+        <entry>
+          <string>Bits</string>
+          <int>4</int>
+        </entry>
+      </elementAttributes>
+      <pos x="840" y="380"/>
+    </visualElement>
+    <visualElement>
+      <elementName>LED</elementName>
+      <elementAttributes/>
+      <pos x="900" y="340"/>
+    </visualElement>
+  </visualElements>
+  <wires>
+    <wire>
+      <p1 x="780" y="320"/>
+      <p2 x="840" y="320"/>
+    </wire>
+    <wire>
+      <p1 x="340" y="260"/>
+      <p2 x="480" y="260"/>
+    </wire>
+    <wire>
+      <p1 x="780" y="260"/>
+      <p2 x="900" y="260"/>
+    </wire>
+    <wire>
+      <p1 x="340" y="340"/>
+      <p2 x="420" y="340"/>
+    </wire>
+    <wire>
+      <p1 x="860" y="340"/>
+      <p2 x="900" y="340"/>
+    </wire>
+    <wire>
+      <p1 x="380" y="280"/>
+      <p2 x="480" y="280"/>
+    </wire>
+    <wire>
+      <p1 x="780" y="280"/>
+      <p2 x="880" y="280"/>
+    </wire>
+    <wire>
+      <p1 x="340" y="300"/>
+      <p2 x="380" y="300"/>
+    </wire>
+    <wire>
+      <p1 x="420" y="300"/>
+      <p2 x="480" y="300"/>
+    </wire>
+    <wire>
+      <p1 x="880" y="300"/>
+      <p2 x="900" y="300"/>
+    </wire>
+    <wire>
+      <p1 x="780" y="300"/>
+      <p2 x="860" y="300"/>
+    </wire>
+    <wire>
+      <p1 x="880" y="280"/>
+      <p2 x="880" y="300"/>
+    </wire>
+    <wire>
+      <p1 x="420" y="300"/>
+      <p2 x="420" y="340"/>
+    </wire>
+    <wire>
+      <p1 x="840" y="320"/>
+      <p2 x="840" y="380"/>
+    </wire>
+    <wire>
+      <p1 x="380" y="280"/>
+      <p2 x="380" y="300"/>
+    </wire>
+    <wire>
+      <p1 x="860" y="300"/>
+      <p2 x="860" y="340"/>
+    </wire>
+  </wires>
+  <measurementOrdering/>
+</circuit>

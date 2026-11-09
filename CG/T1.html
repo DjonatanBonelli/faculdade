@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>My first three.js app</title>
+		<style>
+			body { margin: 0; }
+		</style>
+	</head>
+	<body>
+		<script type="module">
+			import * as THREE from 'https://unpkg.com/three/build/three.module.js';
+
+			const scene = new THREE.Scene();
+			const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+
+			const renderer = new THREE.WebGLRenderer();
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			document.body.appendChild( renderer.domElement );
+
+			const geometry = new THREE.BoxGeometry( 10, 10, 10 );
+			const material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+			const cube = new THREE.Mesh( geometry, material );
+
+			const geometry2 = new THREE.BoxGeometry( 10, 10, 10 );
+			const material2 = new THREE.MeshBasicMaterial( { color: 0x4287f5 } );
+			const cube2 = new THREE.Mesh( geometry2, material2 );
+
+			const geometry3 = new THREE.SphereGeometry( 7, 16, 8 ); 
+			const material3 = new THREE.MeshBasicMaterial( { color: 0xeb4034 } ); 
+			const sphere = new THREE.Mesh( geometry3, material3 ); scene.add( sphere );
+
+			scene.add( cube );
+			scene.add( cube2 );
+			scene.add( sphere );
+
+			sphere.position.x = 50;
+			cube2.position.x = -50;
+			camera.position.z = 50;
+
+			const cubeRotation = new THREE.Euler(0, Math.PI / 2, 0, 'XYZ'); 
+			
+			const sphereRotation = new THREE.Euler(0, Math.PI / 2, 0, 'XYZ'); 
+
+			function updateRotation(object, rotation) {
+    			object.rotation.copy(rotation);
+			}
+
+			function animate() {
+				requestAnimationFrame( animate );
+
+				cube.rotation.x += 0.01;
+				cube.rotation.y += 0.01;
+
+				cubeRotation.y += 0.01;
+    			sphereRotation.x += 0.01;
+
+				updateRotation(cube2, cubeRotation);
+    			updateRotation(sphere, sphereRotation);
+
+				renderer.render( scene, camera );
+			}
+
+			document.addEventListener('keydown', function(event) {
+    		switch (event.keyCode) {
+      		 	case 37: // Seta Esquerda
+					cube2.position.x -= 10;
+					break;
+        		case 39: // Seta Direita
+            		cube2.position.x += 10;
+            		break;
+				case 38: // Seta Cima
+            		sphere.position.y += 10;
+            		break;
+				case 40: // Seta Baixo
+            		sphere.position.y -= 10;
+            		break;
+    }
+});
+
+			animate();
+		</script>
+	</body>
+</html>

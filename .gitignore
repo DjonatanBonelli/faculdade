@@ -1,0 +1,19 @@
+# binarios e builds
+*.exe
+*.out
+*.o
+*.class
+output/
+__pycache__/
+*.pyc
+
+# dependencias
+node_modules/
+
+# pacotes redundantes (pastas ja versionadas)
+*.zip
+
+# sistema
+desktop.ini
+.DS_Store
+Thumbs.db

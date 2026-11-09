@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            overflow: hidden; /* Para garantir que o cursor não apareça ao rolar a página */
+        }
+        canvas {
+            display: block;
+        }
+        /* Oculta o cursor quando dentro do canvas */
+        canvas:hover {
+           /* cursor: none; */
+        }
+        .mira {
+            height: 3px;
+            width: 3px;
+            background-color: green;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2em;
+            font-family: Arial, Helvetica, sans-serif;
+            color: red;
+            display: none;
+            z-index: 10;
+            pointer-events: none; 
+        }
+
+        .menu{
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 80px;
+            background-color: rgba(0, 0, 0, 0.8);
+            border-radius: 15px;
+            padding: 20px;
+            cursor: pointer;
+        }
+        .killLog{
+            position: fixed;
+            right: 1%;
+            top: 5%;
+            font-size: 30px;
+            color: white;
+            background-color: red;
+            padding: 10px;
+            width: 150px;
+            display: none;
+        }
+        .killLogFrame{
+            position: fixed;
+            right: 0%;
+            top: 5%;
+            width: 200px;
+            height: 400px;
+        }
+
+        .recarga{
+            position: fixed;
+            bottom: 5%;
+            right: 5%;
+            font-size: 50px;
+            pointer-events: none; 
+        }
+
+        .municao{
+            position: fixed;
+            bottom: 5%;
+            right: 10%;
+            font-size: 50px;
+            pointer-events: none; 
+        }
+
+        .ptstext{
+            position: fixed;
+            left: 1%;
+            top: 6%;
+            font-size: 50px;
+            pointer-events: none; 
+        }
+        .tempotxt{
+            position: fixed;
+            left: 1%;
+            font-size: 50px;
+            pointer-events: none; 
+        }
+
+        .tempo{
+            position: fixed;
+            left: 20%;
+            font-size: 50px;
+            pointer-events: none; 
+        }
+
+        .pontos{
+            position: fixed;
+            left: 22%;
+            top: 6%;
+            font-size: 50px;
+            pointer-events: none; 
+        }
+
+      
+    </style>
+    <title>TF CG</title>
+</head>
+<body>
+    <span class="tempotxt" id="tempotxt">Tempo (s): </span>
+    <span class="tempo" id="tempo"></span>
+    <span class="ptstext" id="ptstext">Pontuação: </span>
+    <span class="pontos" id="pontos"></span>
+    <div class="menu" id="menu">Continuar (C)</div>
+    <div class="mira" id="mira"></div>
+    <div class="crosshair" id="crosshair">X</div>
+    <div class="killLogFrame" id="killLogFrame"></div>
+    <span class="municao" id="municao"> Munição: </span>
+    <span class="recarga" id="recarga"></span>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://threejs.org/build/three.module.js",
+                "three/addons/": "https://threejs.org/examples/jsm/"
+            }
+        }
+    </script>
+    <script src="threex.keyboardstate.js"></script>
+
+    <script type="module">
+        import * as THREE from 'https://unpkg.com/three/build/three.module.js';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { FirstPersonControls } from 'three/addons/controls/FirstPersonControls.js';
+        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { MTLLoader } from 'three/addons/loaders/MTLLoader.js';
+        import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+        
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+        
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 10000);
+  //      const controls = new OrbitControls(camera, renderer.domElement);
+        
+        const materialPhysical = new THREE.MeshPhysicalMaterial({
+        color: 0x00ff00,        // Cor básica
+        roughness: 0.5,         // Rugosidade da superfície (0 é liso, 1 é completamente rugoso)
+        metalness: 0.5,         // Metalicidade da superfície (0 é não metálico, 1 é completamente metálico)
+        clearcoat: 0.5,         // Cobertura clara (0 a 1)
+        clearcoatRoughness: 0,// Rugosidade da cobertura clara (0 a 1)
+        reflectivity: 0.5,      // Refletividade da superfície (0 a 1)
+        transmission: 0,      // Transmissão de luz (0 a 1, 0 é opaco, 1 é completamente transparente)
+        thickness: 0,         // Espessura do material para transmissão
+        ior: 0,               // Índice de refração (1.0 para ar, valores maiores para materiais como vidro, água, etc.)
+        sheen: 0,             // Intensidade do brilho (0 a 1)
+        sheenColor: 0xff0000    // Cor do brilho
+        });
+
+
+        ///////////////// TEXTURAS /////////////// 
+
+        const textureLoader = new THREE.TextureLoader();
+        const texture = textureLoader.load('textchaomadeira.jpg');
+        // Carrega a textura de equirectangular
+        const textureLoader2 = new THREE.TextureLoader();
+        const texture2 = textureLoader.load('textceu.jpg');
+
+        const textchao = textureLoader.load('metal-texture.jpg');
+        // Configura a textura para repetir na direção Y (para o céu)
+        texture2.wrapS = THREE.RepeatWrapping;
+        texture2.repeat.y = 2; // Ajuste conforme necessário para obter o resultado desejado
+        // Cria uma geometria esférica
+        const geometry = new THREE.SphereGeometry(500, 60, 40);
+        // Inverte as normais para o interior da esfera
+        geometry.scale(-1, 1, 1);
+        // Aplica a textura à esfera
+        const material2 = new THREE.MeshBasicMaterial({ map: texture2 });
+        const sphere = new THREE.Mesh(geometry, material2);
+        // Adiciona a esfera à cena
+        scene.add(sphere);
+        // Crie um material com a textura
+        const material = new THREE.MeshBasicMaterial({ map: texture }); // Use MeshBasicMaterial para uma textura sem iluminação
+        const materialchao = new THREE.MeshBasicMaterial({ map: textchao });
+        ///////////////// TEXTURAS /////////////// 
+
+        const plano = new THREE.PlaneGeometry( 100, 100, 100, 100 );
+        const corpo = new THREE.BoxGeometry( 25, 2.5, 2 );
+        const caixa = new THREE.BoxGeometry(3, 7, 3)
+        const paredebox = new THREE.BoxGeometry(35, 10, 1)
+
+        const chao = new THREE.Mesh( plano, materialchao );
+        const cubo = new THREE.Mesh( corpo, material );
+        const cubo2 = new THREE.Mesh( caixa, material);
+        const parede = new THREE.Mesh( paredebox, material )
+
+        cubo.position.set(8, 0, -3);
+        cubo2.position.set(-10, 0, -4);
+        parede.position.set(0, 0, -35)
+
+        scene.add(cubo, cubo2, parede);
+
+        let model;
+
+        const loader = new OBJLoader();
+        const mtlLoader = new MTLLoader();
+
+        mtlLoader.load('ump47.mtl', (materials) => {
+            materials.preload();
+
+            const objLoader = new OBJLoader();
+            objLoader.setMaterials(materials);
+            objLoader.load('ump47.obj', (object) => {
+                object.scale.set(0.25, 0.25, 0.25); 
+                scene.add(object);
+                object.position.set(1, -1, -2);
+                object.rotation.y = 1.5;
+                model = object;
+                camera.add(object);
+            });
+        });
+
+        // Luz ambiente
+        const ambientLight = new THREE.AmbientLight(0x404040, 20);
+        scene.add(ambientLight);
+        
+        // Luz direcional
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 3);
+        directionalLight.position.set(10, 10, 10);
+        //scene.add(directionalLight);
+
+    
+        const mira = document.getElementById("mira");
+
+        class Personagem {
+            constructor(vidaInicial, x, y, z) {
+                this.mesh = null; 
+                this.vida = vidaInicial;
+                this.carregarModelo(x, y, z); 
+            }
+
+            carregarModelo(x, y, z) {
+                const mtlLoader = new MTLLoader();
+                mtlLoader.load('WoodenLarry.mtl', (materials) => {
+                    materials.preload();
+                    const objLoader = new OBJLoader();
+                    objLoader.setMaterials(materials);
+                    objLoader.load('WoodenLarry.obj', (object) => {
+                        object.scale.set(0.6, 0.6, 0.6); 
+                        object.traverse((child) => {
+                            if (child instanceof THREE.Mesh) {
+                                child.material = materials; 
+                            }
+                        });
+                        this.mesh = object;
+                        this.mesh.position.set(x, y, z); 
+                        scene.add(this.mesh); 
+                        inimigos.push(this); 
+                    });
+                });
+            }
+
+            tomaDano(qtdDano) {
+                this.vida -= qtdDano;
+                if (this.vida <= 0) {
+                    this.morre();
+                    return 1; 
+                } else {
+                    return 0; 
+                }
+            }
+
+            morre() {
+                if (this.mesh) {
+                    scene.remove(this.mesh);
+                    pontuacao += 15;
+                    pontos.textContent = pontuacao;
+                    count++;
+                    criaKillLog(count);
+                    const kill_log = document.getElementById('killLog' + count);
+                    const tempo = 2000;
+                    setKillLog(kill_log, tempo);
+                }
+            }
+}
+
+        let inimigos = [];
+
+        function criaInimigo(x, y, z) {
+            const inimigo = new Personagem(100, x, y, z);
+        }
+
+        function geraInimigos(numInimigos) {
+            for (let i = 0; i < numInimigos; i++) {
+                const dists = [-12, -18, -24];
+                const dist_sel = Math.floor(Math.random() * 3);
+                const x = Math.random() * 15 - 5;
+                const y = 0;
+                const z = dists[dist_sel];
+
+                criaInimigo(x, y, z);
+            }
+        }
+        function showCrosshair() {
+            crosshair.style.display = 'block';
+            crosshair.style.opacity = 1;
+            setTimeout(() => {
+                crosshair.style.transition = 'opacity 0.1s';
+                crosshair.style.opacity = 0;
+                setTimeout(() => {
+                    crosshair.style.display = 'none';
+                    crosshair.style.transition = ''; 
+                }, 20);
+            }, 20); 
+        }
+
+        function atira() {
+            if (municao >= 1 && isPointerLocked == true) {
+                municao -= 1;
+                document.getElementById('recarga').textContent = municao;
+
+                const mouse = new THREE.Vector2(0, 0);
+
+                raycaster.setFromCamera(mouse, camera);
+
+                const intersection = raycaster.intersectObject(scene, true)[0]; 
+
+                if (intersection) {
+                    const object = intersection.object;
+                    const personagem = inimigos.find(inimigo => {
+                        return inimigo.mesh === object || inimigo.mesh.children.includes(object);
+                    });
+
+                    if (personagem) {
+                        let morreu = personagem.tomaDano(25);
+                        showCrosshair();
+                        if (morreu === 1) {
+                            const index = inimigos.findIndex(inimigo => inimigo.mesh === personagem.mesh);
+
+                            if (index !== -1) {
+                                inimigos.splice(index, 1);
+                            }
+
+                            if (inimigos.length === 0 && cronometro > 0) geraInimigos(12);
+                        }
+                    }
+                }
+            }
+        }
+        
+        let isShooting = false;
+        let shootingInterval;
+        document.addEventListener('mousedown', onMouseDown, false);
+        document.addEventListener('mouseup', onMouseUp, false);
+        
+        let municao = 25;
+        let cronometro = 30;
+        let pontuacao = 0;
+        document.getElementById('recarga').textContent = municao;
+        let pontos = document.getElementById('pontos');
+        let time = document.getElementById('tempo');
+        pontos.textContent = pontuacao;
+        time.textContent = cronometro;
+
+        function onMouseDown(event) {
+            isShooting = true;
+            startShooting();
+        }
+
+        function onMouseUp(event) {
+            isShooting = false;
+            stopShooting();
+        }
+        function aplicarRecuo(camera, intensidadeRecuo) {
+            // Cria uma matriz de rotação para o recuo
+            const recuoMatrix = new THREE.Matrix4().makeRotationX(intensidadeRecuo);
+
+            // Aplica a rotação em relação ao sistema de coordenadas local da câmera
+            camera.matrix.multiply(recuoMatrix);
+            camera.rotation.setFromRotationMatrix(camera.matrix);
+        }
+        function startShooting() {
+            if (shootingInterval) return; 
+
+            shootingInterval = setInterval(() => {
+                if (isShooting) {
+                    atira();
+                    const intensidadeRecuo = 0.01; // Ajuste a intensidade conforme necessário
+                    // Chamando a função de recuo (por exemplo, quando o disparo ocorre)
+                    aplicarRecuo(camera, intensidadeRecuo);
+                }
+            }, 100); // (100ms = 10 tiros por segundo)
+        }
+
+        function stopShooting() {
+            clearInterval(shootingInterval);
+            shootingInterval = null;
+        }
+
+        function criaKillLog(count) {
+            
+            const kill_log = document.createElement('div');
+        
+            kill_log.id = 'killLog' + count;
+            kill_log.display = 'block';
+            kill_log.textContent = 'Você abateu o bot Nº ' + count + "!";
+            kill_log.style.backgroundColor = 'lightblue';
+            kill_log.style.padding = '10px';
+            kill_log.style.marginTop = '10px';
+            kill_log.style.pointerEvents = 'none';
+            kill_log.style.userSelect = 'none';
+
+            const container = document.getElementById('killLogFrame');
+            container.appendChild(kill_log);
+
+        }
+
+        function setKillLog(kill_log, tempo) {
+            setTimeout(function() {
+                kill_log.style.display = 'none';
+            }, tempo);
+        }
+
+
+        let intervalId;
+        let timerRunning = false;
+
+        function updateCounter() {
+            if (cronometro > 0) {
+                cronometro--;
+                time.textContent = cronometro;
+            } else {
+                stopTimer();
+                togglePointerLock;
+                isPointerLocked = !isPointerLocked;
+                menu.style.display = "block"
+            }
+        }
+
+        function startTimer() {
+            if (!timerRunning) {
+                timerRunning = true;
+                intervalId = setInterval(updateCounter, 1000);
+            }
+        }
+
+        function stopTimer() {
+            if (timerRunning) {
+                timerRunning = false;
+                clearInterval(intervalId);
+            }
+        }
+
+        window.addEventListener('click', atira, false);
+        
+        const fpcam = new PointerLockControls( camera, renderer.domElement );
+
+        scene.add(fpcam.getObject());
+        
+        const togglePointerLock = function () {
+            if (document.pointerLockElement === renderer.domElement) {
+                fpcam.unlock();
+                menu.style.display = 'block';
+            } else {
+                fpcam.lock();
+                menu.style.display = 'none';
+            }
+        };
+
+        let isPointerLocked = false;
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'c' || event.key === 'C') {
+                if(timerRunning){
+                    stopTimer();
+                }
+                else{
+                    startTimer();
+                }
+                togglePointerLock();
+                isPointerLocked = !isPointerLocked;
+            }
+        }, false);
+
+        const raycaster = new THREE.Raycaster();
+        const direction = new THREE.Vector3();
+        let collisionDistance = 1;
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function detectCollisions() {
+            camera.getWorldDirection(direction);
+            raycaster.set(camera.position, direction);
+
+            const intersects = raycaster.intersectObjects(scene.children, true);
+            if (intersects.length > 0 && intersects[0].distance < 1) {
+                camera.position.addScaledVector(direction, -0.1);
+            }
+        }
+
+        const mouse = new THREE.Vector2();
+        let count = 0;
+
+        const person = new FirstPersonControls(camera, renderer.domElement);
+        person.movementSpeed = 5;
+        person.lookSpeed = 0.8;
+        person.noFly = true;
+        person.lookVertical = true;
+
+        let clock = new THREE.Clock(true);
+
+        camera.position.set(0, 1.7, 0);
+        let cameraHeight = camera.position.y;
+
+        chao.rotation.x = -Math.PI/2;
+        scene.add( chao );
+
+        geraInimigos(12);
+
+        let moveForward = false;
+        let moveBackward = false;
+        let moveLeft = false;
+        let moveRight = false;
+
+        const keyboard = new THREEx.KeyboardState();
+
+        function animate() {
+            requestAnimationFrame( animate );
+            const delta = clock.getDelta();
+
+            if (moveForward) camera.translateZ(-person.movementSpeed * delta);
+            if (moveBackward) camera.translateZ(person.movementSpeed * delta);
+            if (moveLeft) camera.translateX(-person.movementSpeed * delta);
+            if (moveRight) camera.translateX(person.movementSpeed * delta);
+
+            camera.position.y = cameraHeight;
+            renderer.render( scene, camera );
+        }
+        
+        function handleKeydown(event) {
+            if (keyboard.pressed("w")) moveForward = true;
+            if (keyboard.pressed("s")) moveBackward = true;
+            if (keyboard.pressed("a")) moveLeft = true;
+            if (keyboard.pressed("d")) moveRight = true;
+            if (keyboard.pressed("shift+w")) person.movementSpeed = 9;
+            if (keyboard.pressed("v")) cameraHeight = 1;
+            if (keyboard.pressed("r") && municao < 25){
+                document.getElementById('municao').style.display = "none";
+                document.getElementById('recarga').textContent = "Recarregando...";
+                setTimeout(() => {
+                    municao = 25;
+                    document.getElementById('recarga').textContent = municao;
+                    document.getElementById('municao').style.display = "block";
+                }, 1000);}; 
+            if (keyboard.pressed("t")) geraInimigos(12);
+            
+        }
+
+        function handleKeyup(event) {
+            if (!keyboard.pressed("w")) moveForward = false;
+            if (!keyboard.pressed("s")) moveBackward = false;
+            if (!keyboard.pressed("a")) moveLeft = false;
+            if (!keyboard.pressed("d")) moveRight = false;
+            if (!keyboard.pressed("shift+w")) person.movementSpeed = 5;
+            if (!keyboard.pressed("v")) cameraHeight = 1.7;
+
+    }
+        document.addEventListener('keydown', handleKeydown);
+        document.addEventListener('keyup', handleKeyup);
+        animate();
+
+    </script>
+
+</body>
+</html> 
